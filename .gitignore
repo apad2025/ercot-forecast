@@ -1,0 +1,25 @@
+# IDE Project Files
+.idea/
+.vscode/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+
+# virtual environments
+.venv/
+venv/
+env/
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Generated data
+data/processed/
+
+# Models and plots
+*.pkl
+*.joblib
