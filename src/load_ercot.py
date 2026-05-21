@@ -3,6 +3,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).parent.parent
 
+PROCESSED = ROOT / "data/processed"
+
 def parse_timestamps(s):
     """
     ERCOT marks timestamps in ending hours, so convert to pd.Timestamp
@@ -35,6 +37,8 @@ def load_file(path):
     return df[cols].sort_values("timestamp").reset_index(drop=True)
 
 if __name__ == "__main__":
+    PROCESSED.mkdir(parents=True, exist_ok=True)
+
     df_2024 = load_file(ROOT / "data/raw/Native_Load_2024.xlsx")
     df_2025 = load_file(ROOT / "data/raw/Native_Load_2025.xlsx")
     df = pd.concat([df_2024, df_2025], ignore_index=True)
