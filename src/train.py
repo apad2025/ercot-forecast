@@ -6,6 +6,7 @@ import lightgbm as lgb
 
 ROOT = Path(__file__).resolve().parent.parent
 
+COMBINED_PATH = ROOT / "data/processed/ercot_with_weather.csv"
 FEATURES_PATH = ROOT / "data/processed/features.csv"
 PREDICTION_PATH = ROOT / "data/processed/predictions.csv"
 REPORTS = ROOT / "reports"
@@ -40,6 +41,15 @@ def main():
     feature_cols = [c for c in df.columns if c != TARGET]
     X_train, y_train = train[feature_cols], train[TARGET]
     X_test, y_test = test[feature_cols], test[TARGET]
+
+    # calculate percentage shift from 2024 to 2025
+    original = pd.read_csv(COMBINED_PATH, parse_dates=["timestamp"], index_col="timestamp")
+    mean_2024 = original.loc["2024", TARGET].mean()
+    mean_2025 = original.loc["2025", TARGET].mean()
+    shift = mean_2025 - mean_2024
+    pct = (shift / mean_2024) * 100
+
+    print(f"\nShift from 2024 to 2025: {shift:+,.0f} MW ({pct:+.1f}%)")
 
     # use persistence as baselines
     results = [
@@ -121,6 +131,26 @@ def main():
     plt.close()
 
     print(f"wrote {REPORTS}/actual_vs_predicted.png, residuals_by_hour.png, feature_importance.png")
+
+    # bias by load decile
+    decile = pd.qcut(y_test, 10, labels=False)
+    bias = (
+        pd.Series(y_test.values - prediction_df["lightgbm"].values, index=decile).groupby(level=0).mean()
+    )
+
+    plt.figure(figsize=(10, 4.5))
+    plt.plot(bias.index, bias.values, marker="o", lw=1.5, color="tab:blue")
+    plt.axhline(0, color="black", lw=0.8, ls="--", alpha=0.5)
+    plt.xlabel("Load decile (0 = lowest 10% of hours, 9 = peak 10%)")
+    plt.ylabel("Mean signed error (MW)\n(+ = underpredict, - = overpredict)")
+    plt.title("LightGBM bias by load decile")
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.savefig(REPORTS / "bias_by_decile.png", dpi=120)
+    plt.close()
+
+    print(f"wrote {REPORTS}/bias_by_decile.png")
+
 
 if __name__ == "__main__":
     main()
