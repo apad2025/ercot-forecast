@@ -32,6 +32,10 @@ def build_features(df):
     holiday_ts = pd.to_datetime(list(us_holidays.keys()))
     out["is_holiday"] = df.index.normalize().isin(holiday_ts).astype(int)
 
+    # time trend
+    start_date = df.index.min().normalize()
+    out["days_since_start"] = (df.index.normalize() - start_date).days
+
     # weather
     temp = df["dallas_temp_f"]
     out["dallas_cdd"] = (temp - BASE_TEMP).clip(lower=0)
